@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router'
+import { Route, Routes, useLocation } from 'react-router'
 import Login from './pages/Login.jsx'
 import Registar from './pages/Registar.jsx'
 import Perfil from './pages/Perfil.jsx'
@@ -10,11 +10,18 @@ import EditarQuarto from './pages/Quarto/EditarQuarto.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import PrivateRoute from './components/PrivateRoute.jsx'
 import AdministradorOnly from './components/AdministadorOnly.jsx'
+import Header from './components/Header.jsx'
+import Footer from './components/Footer.jsx'
 
 function App() {
+  const location = useLocation();
+  // Não mostrar header/footer em login e registar
+  const hideHeaderFooter = ['/login', '/registar'].includes(location.pathname);
+
   return (
     <>
       <AuthProvider>
+        {!hideHeaderFooter && <Header />}
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -59,6 +66,7 @@ function App() {
             }
           />
         </Routes>
+        {!hideHeaderFooter && <Footer />}
       </AuthProvider>
     </>
   )

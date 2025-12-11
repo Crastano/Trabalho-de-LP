@@ -36,69 +36,76 @@ export default function Login() {
     };
 
     return (
-        <div style={{
-            display: "flex", justifyContent: "center", alignItems: "center",
-            height: "100vh", background: "#f3f4f6"
-        }}>
-            <div style={{
-                background: "white",
-                padding: "30px",
-                width: "350px",
-                borderRadius: "12px",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
-            }}>
-                <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Iniciar Sessão</h2>
+        <div className="login-page">
+            <style>{`
+                .login-page{display:flex;min-height:100vh;font-family:Arial,Helvetica,sans-serif}
+                .left{flex:1;display:flex;align-items:center;justify-content:center;background:#f3f4f6;padding:60px}
+                .form-card{width:420px;background:white;border-radius:8px;padding:32px;box-shadow:0 6px 20px rgba(0,0,0,0.15)}
+                .form-card h2{margin:0 0 18px 0;text-align:left;font-size:22px}
+                .form-row{margin-bottom:12px}
+                .form-row label{display:block;font-size:13px;color:#374151;margin-bottom:6px}
+                .form-row input{width:100%;padding:10px;border-radius:8px;border:1px solid #e5e7eb}
+                .login-btn{width:100%;background:#2563eb;color:white;padding:10px;border-radius:8px;border:none;cursor:pointer;margin-top:6px}
+                .small-link{font-size:13px;color:#2563eb;text-decoration:none}
 
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-                    <div>
-                        <label>Email:</label>
-                        <input
-                            type="email"
-                            placeholder="email@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            style={{
-                                width: "100%", padding: "8px", borderRadius: "8px",
-                                border: "1px solid #ccc"
-                            }}
-                        />
+                .right{flex:1;background-image:url('/src/assets/images/white-umbrellas.jpg');background-size:cover;background-position:center;position:relative;display:flex;align-items:center;justify-content:center}
+                .right::before{content:"";position:absolute;inset:0;background:rgba(27, 44, 86, 0.6)}
+                .right-content{position:relative;color:white;text-align:center;padding:20px;max-width:420px}
+                .right-content h3{font-size:26px;margin-bottom:18px}
+                .cta-btn{background:#f59e0b;color:#111;padding:12px 100px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;margin-top:12px}
+
+                @media (max-width:900px){
+                    .login-page{flex-direction:column}
+                    .right{height:280px}
+                }
+                @media (max-width:640px){
+                    .right{display:none}
+                    .left{padding:24px}
+                    .form-card{width:100%}
+                }
+            `}</style>
+
+            <div className="left">
+                <div className="form-card">
+                    <h2>Iniciar Sessão</h2>
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-row">
+                            <label>Email</label>
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="form-row">
+                            <label>Password</label>
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                        </div>
+
+                        <button type="submit" className="login-btn">
+                            {!loading ? 'Login' : <ClipLoader size={18} color="#fff" />}
+                        </button>
+                    </form>
+
+                    <div style={{display:'flex',justifyContent:'space-between',marginTop:14}}>
+                        <Link to="/forgot" className="small-link">Forgot password ?</Link>
+                        <Link to="/registar" className="small-link">Criar Conta</Link>
                     </div>
+                </div>
+            </div>
 
-                    <div>
-                        <label>Password:</label>
-                        <input
-                            type="password"
-                            placeholder="********"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            style={{
-                                width: "100%", padding: "8px", borderRadius: "8px",
-                                border: "1px solid #ccc"
-                            }}
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        style={{
-                            background: "#2563eb", color: "white",
-                            padding: "10px", borderRadius: "8px", cursor: "pointer",
-                            border: "none"
-                        }}
-                    >
-                        {!loading ? "Login" : <ClipLoader size={18} color="#fff" />}
-                    </button>
-                </form>
-
-                <p style={{ marginTop: "15px", textAlign: "center" }}>
-                    Não tens conta?
-                    <Link to="/registar" style={{ marginLeft: 5, color: "#2563eb" }}>Criar conta</Link>
-                </p>
-
-                <p style={{ marginTop: "15px", textAlign: "center" }}>
-                    Voltar ao Início
-                    <Link to="/" style={{ marginLeft: 5, color: "#2563eb" }}>Home Page</Link>
-                </p>
+            <div className="right">
+                <div className="right-content">
+                    <h3>Register first if you don't have an account yet.</h3>
+                    <Link to="/registar" className="cta-btn">Register</Link>
+                </div>
             </div>
         </div>
     );
