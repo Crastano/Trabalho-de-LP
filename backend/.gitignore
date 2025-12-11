@@ -1,0 +1,41 @@
+# Laravel
+/vendor
+/node_modules
+/public/storage
+/storage/*.key
+/storage/app/public
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Composer
+composer.lock
+composer.phar
+
+# NPM / PNPM
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE / Editor
+/.idea
+/.vscode
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cache
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/cache/*
+/storage/logs/*
+/bootstrap/cache/*.php
+
+# Vite build outputs
+/public/build

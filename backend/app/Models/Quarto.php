@@ -20,6 +20,7 @@ class Quarto extends Model
         'preco_por_dia',
         'posicao_x',
         'posicao_y',
+        'imagem',
     ];
 
     protected $casts = [

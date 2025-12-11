@@ -8,16 +8,17 @@ use App\Http\Controllers\QuartoController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\PagamentoController;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
 Route::post('/registar', [AuthController::class, 'registar']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Quartos públicos (sem autenticação)
+Route::get('/quartos', [QuartoController::class, 'index']);
+Route::get('/quartos/{id}', [QuartoController::class, 'show']);
+
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/quartos', [QuartoController::class, 'index']);
-    Route::get('/quartos/{id}', [QuartoController::class, 'show']);
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
 
     Route::get('/andares', [AndarController::class, 'index']);
     Route::get('/andares/{id}', [AndarController::class, 'show']);
