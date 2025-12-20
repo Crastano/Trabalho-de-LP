@@ -3,11 +3,9 @@
 namespace Database\Seeders;
 
 use App\Enums\UtilizadorCargo;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-use App\Enums\UtilzizadorCargo;
 
 class UserSeeder extends Seeder
 {
@@ -16,7 +14,17 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->administrador()->create();
+        // Admin fixo para acesso ao painel
+        User::updateOrCreate(
+            ['email' => 'admin@hotel.com'],
+            [
+                'name' => 'Administrador',
+                'password' => Hash::make('password'),
+                'cargo' => UtilizadorCargo::ADMINISTRADOR,
+            ],
+        );
+
+        // Clientes de exemplo
         User::factory(9)->create();
     }
 }

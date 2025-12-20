@@ -7,45 +7,54 @@ use App\Http\Controllers\Authcontroller\AuthController;
 use App\Http\Controllers\QuartoController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\PagamentoController;
+use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\PasswordResetController;
 
 Route::post('/registar', [AuthController::class, 'registar']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Reset password (público)
+Route::post('/forgot-password', [PasswordResetController::class, 'forgot']);
+Route::post('/reset-password', [PasswordResetController::class, 'reset']);
+
 // Quartos públicos (sem autenticação)
 Route::get('/quartos', [QuartoController::class, 'index']);
-Route::get('/quartos/{id}', [QuartoController::class, 'show']);
+Route::get('/quartos/{quarto}', [QuartoController::class, 'show']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'ativo'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
     Route::get('/andares', [AndarController::class, 'index']);
-    Route::get('/andares/{id}', [AndarController::class, 'show']);
+    Route::get('/andares/{andar}', [AndarController::class, 'show']);
 
     Route::get('/reservas', [ReservaController::class, 'index']);
-    Route::get('/reservas/{id}', [ReservaController::class, 'show']);
+    Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
+    Route::post('/reservas', [ReservaController::class, 'store']);
+    Route::put('/reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::delete('/reservas/{reserva}', [ReservaController::class, 'destroy']);
 });
 
-Route::middleware(['auth:sanctum', 'administrador'])->group(function () {
+Route::middleware(['auth:sanctum', 'ativo', 'administrador'])->group(function () {
+
+    // CLIENTES
+    Route::get('/clientes', [ClienteController::class, 'index']);
+    Route::get('/clientes/{user}', [ClienteController::class, 'show']);
+    Route::put('/clientes/{user}', [ClienteController::class, 'update']);
 
     // QUARTOS
     Route::post('/quartos', [QuartoController::class, 'store']);
-    Route::put('/quartos/{id}', [QuartoController::class, 'update']);
-    Route::delete('/quartos/{id}', [QuartoController::class, 'destroy']);
+    Route::put('/quartos/{quarto}', [QuartoController::class, 'update']);
+    Route::delete('/quartos/{quarto}', [QuartoController::class, 'destroy']);
 
     // ANDARES
     Route::post('/andares', [AndarController::class, 'store']);
-    Route::put('/andares/{id}', [AndarController::class, 'update']);
-    Route::delete('/andares/{id}', [AndarController::class, 'destroy']);
-
-    // RESERVAS
-    Route::post('/reservas', [ReservaController::class, 'store']);
-    Route::put('/reservas/{id}', [ReservaController::class, 'update']);
-    Route::delete('/reservas/{id}', [ReservaController::class, 'destroy']);
+    Route::put('/andares/{andar}', [AndarController::class, 'update']);
+    Route::delete('/andares/{andar}', [AndarController::class, 'destroy']);
 
     // PAGAMENTOS
     Route::post('/pagamentos', [PagamentoController::class, 'store']);
-    Route::put('/pagamentos/{id}', [PagamentoController::class, 'update']);
-    Route::delete('/pagamentos/{id}', [PagamentoController::class, 'destroy']);
+    Route::put('/pagamentos/{pagamento}', [PagamentoController::class, 'update']);
+    Route::delete('/pagamentos/{pagamento}', [PagamentoController::class, 'destroy']);
 });

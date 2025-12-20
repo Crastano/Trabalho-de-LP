@@ -3,7 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use app\Http\Middleware\IsAdministrador;
+use App\Http\Middleware\IsAdministrador;
+use App\Http\Middleware\IsAtivo;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'administrador' => IsAdministrador::class,
+            'ativo' => IsAtivo::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

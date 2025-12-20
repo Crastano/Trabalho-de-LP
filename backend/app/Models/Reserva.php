@@ -25,7 +25,7 @@ class Reserva extends Model
     ];
 
     public function utilizador() {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'utilizador_id');
     }
 
     public function quarto() {

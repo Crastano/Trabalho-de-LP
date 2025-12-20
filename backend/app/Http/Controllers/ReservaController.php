@@ -10,9 +10,13 @@ class ReservaController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Reserva::with(['utilizador', 'quarto', 'pagamento'])->get();
+        // Return only current user's reservations
+        $userId = $request->user()->id;
+        return Reserva::where('utilizador_id', $userId)
+            ->with(['quarto', 'pagamento'])
+            ->get();
     }
 
     /**
@@ -21,18 +25,20 @@ class ReservaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'utilizador_id' => 'required|exists:utilizadors,id',
             'quarto_id' => 'required|exists:quartos,id',
             'data_inicio' => 'required|date',
-            'data_fim' => 'required|date|after:data_checkin',
-            'estado' => 'required',
+            'data_fim' => 'required|date|after:data_inicio',
         ]);
+
+        // Add user ID and default estado
+        $validated['utilizador_id'] = $request->user()->id;
+        $validated['estado'] = 'confirmada';
 
         Reserva::create($validated);
 
         return response()->json([
-            'message' => 'Reserva criado com sucesso!',
-        ]);
+            'message' => 'Reserva criada com sucesso!',
+        ], 201);
     }
 
     /**

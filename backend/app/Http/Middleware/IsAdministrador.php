@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use app\Enums\UtilizadorCargo;
+use App\Enums\UtilizadorCargo;
 
 class IsAdministrador
 {
@@ -16,7 +16,9 @@ class IsAdministrador
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->user()->cargo != UtilizadorCargo::ADMINISTRADOR) {
+        $user = $request->user();
+
+        if (!$user || ($user->cargo ?? null) !== UtilizadorCargo::ADMINISTRADOR->value) {
             return response()->json(['message' => 'Acesso negado'], 403);
         }
 

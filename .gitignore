@@ -1,0 +1,34 @@
+# Root ignore (Laravel + Vite/React)
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Node
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# Vite / builds
+**/dist/
+**/.vite/
+
+# Laravel / PHP
+backend/vendor/
+backend/.env
+backend/.env.*
+backend/storage/*.key
+backend/storage/app/public/
+backend/storage/framework/
+backend/storage/logs/
+backend/bootstrap/cache/
+
+# PHPUnit / Pest
+backend/.phpunit.result.cache
+
+# IDE
+.vscode/
+.idea/

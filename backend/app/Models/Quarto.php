@@ -21,11 +21,21 @@ class Quarto extends Model
         'posicao_x',
         'posicao_y',
         'imagem',
+        'destaque',
+        'camas',
+        'wifi',
+        'ar_condicionado',
+        'tv',
+        'descricao',
     ];
 
     protected $casts = [
         'tipo' => QuartoTipo::class,
         'estado' => QuartoEstado::class,
+        'destaque' => 'boolean',
+        'wifi' => 'boolean',
+        'ar_condicionado' => 'boolean',
+        'tv' => 'boolean',
     ];
 
     public function andar() {

@@ -44,6 +44,14 @@ class AuthController extends Controller
         };
 
         $user = Auth::user();
+
+        if (($user->cargo ?? null) !== 'administrador' && ($user->ativo ?? true) === false) {
+            Auth::logout();
+            return response()->json([
+                'message' => 'Conta inativa',
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

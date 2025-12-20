@@ -10,9 +10,15 @@ class QuartoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Quarto::orderBy('numero', 'asc')->get();
+        $query = Quarto::orderBy('numero', 'asc');
+
+        if ($request->boolean('featured')) {
+            $query->where('destaque', true);
+        }
+
+        return $query->get();
     }
 
     /**
@@ -27,13 +33,23 @@ class QuartoController extends Controller
             'capacidade' => 'required|integer',
             'estado' => 'required|string',
             'preco_por_dia' => 'required|numeric',
+            'posicao_x' => 'nullable|integer',
+            'posicao_y' => 'nullable|integer',
+            'imagem' => 'nullable|string',
+            'destaque' => 'nullable|boolean',
+            'camas' => 'nullable|string',
+            'wifi' => 'nullable|boolean',
+            'ar_condicionado' => 'nullable|boolean',
+            'tv' => 'nullable|boolean',
+            'descricao' => 'nullable|string',
         ]);
 
-        Quarto::create($validated);
+        $quarto = Quarto::create($validated);
 
         return response()->json([
             'message' => 'Quarto criado com sucesso!',
-        ]);
+            'data' => $quarto,
+        ], 201);
     }
 
     /**
@@ -56,14 +72,22 @@ class QuartoController extends Controller
             'capacidade' => 'integer',
             'estado' => 'string',
             'preco_por_dia' => 'numeric',
-            'posicao_x' => 'integer',
-            'posicao_y' => 'integer',
+            'posicao_x' => 'nullable|integer',
+            'posicao_y' => 'nullable|integer',
+            'imagem' => 'nullable|string',
+            'destaque' => 'nullable|boolean',
+            'camas' => 'nullable|string',
+            'wifi' => 'nullable|boolean',
+            'ar_condicionado' => 'nullable|boolean',
+            'tv' => 'nullable|boolean',
+            'descricao' => 'nullable|string',
         ]);
 
         $quarto->update($validated);
 
         return response()->json([
             'message' => 'Quarto editado com sucesso!',
+            'data' => $quarto->fresh(),
         ]);
     }
 
