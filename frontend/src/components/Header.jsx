@@ -1,19 +1,25 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router';
-import { useAuth } from '../context/AuthContext';
+"use client"
+
+import { useState } from "react"
+import { Link, useNavigate } from "react-router"
+import { useAuth } from "../context/AuthContext"
 
 export default function Header() {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [showDropdown, setShowDropdown] = useState(false)
 
-    const handleLogout = () => {
-        logout();
-        navigate('/');
-    };
+  const handleLogout = async () => {
+    if (typeof logout === 'function') {
+      await logout();
+    }
+    setIsDropdownOpen(false);
+    navigate('/login');
+  };
 
-    return (
-        <header className="header">
-            <style>{`
+  return (
+    <header className="header">
+      <style>{`
                 .header {
                     background: white;
                     border-bottom: 1px solid #e5e7eb;
@@ -98,6 +104,11 @@ export default function Header() {
                     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
                     min-width: 180px;
                     z-index: 1000;
+                    display: none;
+                }
+
+                .profile-dropdown.show {
+                    display: block;
                 }
 
                 .profile-dropdown a,
@@ -173,43 +184,57 @@ export default function Header() {
                 }
             `}</style>
 
-            <Link to="/" className="header-logo">
-                🏨 MAPHOTEL
+      <Link to="/" className="header-logo">
+        🏨 MAPHOTEL
+      </Link>
+
+      <nav className="header-nav">
+        <Link to="/">HOME</Link>
+        <Link to="/sobre">SOBRE</Link>
+        <Link to="/rooms">ROOMS</Link>
+        <Link to="/contact">CONTACT</Link>
+      </nav>
+
+      <div className="header-actions">
+        {!user ? (
+          <>
+            <Link to="/login" className="login-btn">
+              Iniciar Sessão
             </Link>
-
-            <nav className="header-nav">
-                <Link to="/">HOME</Link>
-                <Link to="/">ROOMS</Link>
-                <Link to="/">RESERVATIONS</Link>
-                <Link to="/">CONTACT</Link>
-            </nav>
-
-            <div className="header-actions">
-                {!user ? (
-                    <>
-                        <Link to="/login" className="login-btn">Iniciar Sessão</Link>
-                        <Link to="/registar" className="register-btn">Registar</Link>
-                    </>
-                ) : (
-                    <div className="profile-menu">
-                        <div className="profile-icon">
-                            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                        </div>
-                        <div className="profile-dropdown">
-                            <div style={{ padding: '12px 16px', borderBottom: '1px solid #e5e7eb', fontSize: '13px', color: '#6b7280' }}>
-                                {user.name}
-                            </div>
-                            <Link to="/perfil">Ver Perfil</Link>
-                            {user.cargo === 'administrador' && (
-                                <Link to="/quartos">Gestão de Quartos</Link>
-                            )}
-                            <button onClick={handleLogout} className="logout">
-                                Sair
-                            </button>
-                        </div>
-                    </div>
-                )}
+            <Link to="/registar" className="register-btn">
+              Registar
+            </Link>
+          </>
+        ) : (
+          <div className="profile-menu">
+            <div className="profile-icon" onClick={() => setShowDropdown(!showDropdown)}>
+              {user.name ? user.name.charAt(0).toUpperCase() : "U"}
             </div>
-        </header>
-    );
+            <div className={`profile-dropdown ${showDropdown ? "show" : ""}`}>
+              <div
+                style={{ padding: "12px 16px", borderBottom: "1px solid #e5e7eb", fontSize: "13px", color: "#6b7280" }}
+              >
+                {user.name}
+              </div>
+              <Link to="/perfil" onClick={() => setShowDropdown(false)}>
+                Ver Perfil
+              </Link>
+              {user.cargo === "administrador" ? (
+                <Link to="/admin/dashboard" onClick={() => setShowDropdown(false)}>
+                  Área Admin
+                </Link>
+              ) : (
+                <Link to="/reservations" onClick={() => setShowDropdown(false)}>
+                  Minhas Reservas
+                </Link>
+              )}
+              <button onClick={handleLogout} className="logout">
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
+  )
 }

@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
                 console.log(error);
                 localStorage.removeItem('auth_token');
                 delete api.defaults.headers.common['Authorization'];
+                setUser(null);
             }
         }
         setLoading(false);
@@ -40,8 +41,13 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     }
 
+    const logout = async () => {
+        // Não assumimos que exista endpoint /logout; o essencial é limpar estado local.
+        clearAuthState();
+    }
+
     return (
-        <AuthContext.Provider value={{ user, updateAuthState, loading, checkAuth, clearAuthState }}>
+        <AuthContext.Provider value={{ user, updateAuthState, loading, checkAuth, clearAuthState, logout }}>
             { children }
         </AuthContext.Provider>
     );

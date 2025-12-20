@@ -4,6 +4,9 @@ import api from '../api/api';
 import { mostrarErroMensagem, mostrarSucessoMensagem } from '../utils/notify';
 import { ClipLoader } from 'react-spinners';
 import { useAuth } from '../context/AuthContext.jsx';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import whiteUmbrellasImg from '../assets/images/white-umbrellas.jpg';
 
 export default function Login() {
     const { updateAuthState } = useAuth();
@@ -36,7 +39,9 @@ export default function Login() {
     };
 
     return (
-        <div className="login-page">
+        <>
+        <Header />
+        <div className="login-page" style={{ minHeight: '800px'}}>
             <style>{`
                 .login-page{display:flex;min-height:100vh;font-family:Arial,Helvetica,sans-serif}
                 .left{flex:1;display:flex;align-items:center;justify-content:center;background:#f3f4f6;padding:60px}
@@ -48,7 +53,7 @@ export default function Login() {
                 .login-btn{width:100%;background:#2563eb;color:white;padding:10px;border-radius:8px;border:none;cursor:pointer;margin-top:6px}
                 .small-link{font-size:13px;color:#2563eb;text-decoration:none}
 
-                .right{flex:1;background-image:url('/src/assets/images/white-umbrellas.jpg');background-size:cover;background-position:center;position:relative;display:flex;align-items:center;justify-content:center}
+                .right{flex:1;background-image:url('${whiteUmbrellasImg}');background-size:cover;background-position:center;position:relative;display:flex;align-items:center;justify-content:center}
                 .right::before{content:"";position:absolute;inset:0;background:rgba(27, 44, 86, 0.6)}
                 .right-content{position:relative;color:white;text-align:center;padding:20px;max-width:420px}
                 .right-content h3{font-size:26px;margin-bottom:18px}
@@ -67,7 +72,6 @@ export default function Login() {
 
             <div className="left">
                 <div className="form-card">
-                    <h2>Iniciar Sessão</h2>
                     <form onSubmit={handleSubmit}>
                         <div className="form-row">
                             <label>Email</label>
@@ -108,5 +112,7 @@ export default function Login() {
                 </div>
             </div>
         </div>
+        <Footer />
+        </>
     );
 }

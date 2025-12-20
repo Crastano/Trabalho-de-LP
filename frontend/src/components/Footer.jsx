@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from "react-router";
 
 export default function Footer() {
     const [email, setEmail] = useState('');
@@ -15,37 +16,43 @@ export default function Footer() {
         <footer className="footer">
             <style>{`
                 .footer {
-                    background: #1e3a8a;
+                    background: linear-gradient(120deg, var(--blue-900, #0b1f5e), var(--blue-500, #1f4fbe));
                     color: white;
-                    padding: 60px;
+                    padding: 80px 0 36px;
+                    font-family: 'Manrope', 'Segoe UI', sans-serif;
+                }
+
+                .footer-inner {
+                    width: min(1200px, 92vw);
+                    margin: 0 auto;
                 }
 
                 .footer-content {
-                    max-width: 1000px;
-                    margin: 0 auto;
+                    max-width: 1200px;
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                    gap: 40px;
-                    margin-bottom: 40px;
+                    gap: 36px;
+                    margin-bottom: 28px;
                 }
 
                 .footer-section h3 {
-                    font-size: 24px;
-                    font-weight: 700;
-                    margin-bottom: 20px;
+                    font-size: 16px;
+                    font-weight: 800;
+                    letter-spacing: 2px;
+                    margin-bottom: 16px;
                     color: white;
                 }
 
                 .footer-section p {
-                    font-size: 18px;
-                    color: #ccc;
-                    line-height: 1.6;
+                    font-size: 14px;
+                    color: rgba(255, 255, 255, 0.78);
+                    line-height: 1.7;
                 }
 
                 .footer-section a {
                     display: block;
-                    font-size: 18px;
-                    color: #ccc;
+                    font-size: 14px;
+                    color: rgba(255, 255, 255, 0.78);
                     text-decoration: none;
                     margin-bottom: 12px;
                     transition: color 0.3s;
@@ -60,8 +67,8 @@ export default function Footer() {
                     align-items: center;
                     gap: 8px;
                     margin-bottom: 12px;
-                    font-size: 18px;
-                    color: #ccc;
+                    font-size: 14px;
+                    color: rgba(255, 255, 255, 0.78);
                 }
 
                 .footer-newsletter {
@@ -72,26 +79,41 @@ export default function Footer() {
 
                 .footer-newsletter input {
                     flex: 1;
-                    padding: 8px 12px;
-                    border: none;
-                    border-radius: 4px;
-                    font-size: 18px;
+                    padding: 12px 14px;
+                    border: 1px solid rgba(255, 255, 255, 0.18);
+                    border-radius: 14px;
+                    font-size: 14px;
+                    background: rgba(255, 255, 255, 0.1);
+                    color: white;
+                    outline: none;
+                }
+
+                .footer-newsletter input::placeholder {
+                    color: rgba(255, 255, 255, 0.65);
+                }
+
+                .footer-newsletter input:focus {
+                    border-color: rgba(255, 255, 255, 0.35);
+                    background: rgba(255, 255, 255, 0.12);
                 }
 
                 .footer-newsletter button {
-                    padding: 8px 16px;
-                    background: #ef4444;
-                    color: white;
+                    padding: 12px 18px;
+                    background: var(--gold, #f4b400);
+                    color: #111;
                     border: none;
-                    border-radius: 4px;
+                    border-radius: 14px;
                     cursor: pointer;
-                    font-weight: 600;
-                    font-size: 18px;
-                    transition: background 0.3s;
+                    font-weight: 800;
+                    font-size: 14px;
+                    letter-spacing: 0.5px;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
                 }
 
                 .footer-newsletter button:hover {
-                    background: #dc2626;
+                    background: #ff3a3aff;
+                    transform: translateY(-2px);
+                    box-shadow: 0 12px 30px rgba(244, 180, 0, 0.3);
                 }
 
                 .footer-social {
@@ -103,8 +125,8 @@ export default function Footer() {
                 .social-icon {
                     width: 32px;
                     height: 32px;
-                    border-radius: 50%;
-                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 12px;
+                    background: rgba(255, 255, 255, 0.12);
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -112,7 +134,7 @@ export default function Footer() {
                     transition: background 0.3s;
                     text-decoration: none;
                     color: white;
-                    font-size: 16px;
+                    font-size: 14px;
                 }
 
                 .social-icon:hover {
@@ -121,72 +143,78 @@ export default function Footer() {
 
                 .footer-bottom {
                     border-top: 1px solid rgba(255, 255, 255, 0.1);
-                    padding-top: 60px;
+                    padding-top: 22px;
                     text-align: center;
                     font-size: 14px;
-                    color: #ddddddff;
+                    color: rgba(255, 255, 255, 0.72);
                 }
 
                 @media (max-width: 768px) {
                     .footer {
-                        padding: 40px 24px;
+                        padding: 56px 0 28px;
                     }
 
                     .footer-content {
                         grid-template-columns: 1fr;
                         gap: 24px;
                     }
+
+                    .footer-newsletter {
+                        flex-direction: column;
+                    }
                 }
             `}</style>
 
-            <div className="footer-content">
-                {/* CONTACTO */}
-                <div className="footer-section">
-                    <h3>CONTACTO</h3>
-                    <div className="footer-contact">
-                        📍 Hotel em Porto
+            <div className="footer-inner">
+                <div className="footer-content">
+                    {/* CONTACTO */}
+                    <div className="footer-section">
+                        <h3>CONTACTO</h3>
+                        <div className="footer-contact">
+                            📍 Hotel em Porto
+                        </div>
+                        <div className="footer-contact">
+                            ☎️ +250846787
+                        </div>
+                        <div className="footer-contact">
+                            ✉️ maphotel@gmail.com
+                        </div>
                     </div>
-                    <div className="footer-contact">
-                        ☎️ +250846787
+
+                    {/* INFORMAÇÃO */}
+                    <div className="footer-section">
+                        <h3>INFORMAÇÃO</h3>
+                        <Link to="/sobre">Sobre</Link>
+                        <Link to="/termos">Termos de Uso</Link>
+                        <Link to="/privacidade">Política de Privacidade</Link>
+                        <a href="#mapa">Mapa</a>
                     </div>
-                    <div className="footer-contact">
-                        ✉️ maphotel@gmail.com
+
+                    {/* NEWSLETTER */}
+                    <div className="footer-section">
+                        <h3>NEWSLETTER</h3>
+                        <p>Subscreva a nossa newsletter para receberes as últimas notícias.</p>
+                        <form onSubmit={handleNewsletterSubmit} className="footer-newsletter">
+                            <input
+                                type="email"
+                                placeholder="Seu email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                            <button type="submit">Envio</button>
+                        </form>
+                        <div className="footer-social">
+                            <a href="#facebook" className="social-icon" title="Facebook">f</a>
+                            <a href="#instagram" className="social-icon" title="Instagram">📷</a>
+                            <a href="#twitter" className="social-icon" title="Twitter">𝕏</a>
+                        </div>
                     </div>
                 </div>
 
-                {/* INFORMAÇÃO */}
-                <div className="footer-section">
-                    <h3>INFORMAÇÃO</h3>
-                    <a href="#sobre">Sobre</a>
-                    <a href="#termos">Termos de Uso</a>
-                    <a href="#privacidade">Política de Privacidade</a>
-                    <a href="#mapa">Mapa</a>
+                <div className="footer-bottom">
+                    © 2025 MAPHOTEL. All rights reserved.
                 </div>
-
-                {/* NEWSLETTER */}
-                <div className="footer-section">
-                    <h3>NEWSLETTER</h3>
-                    <p>Subscreva a nossa newsletter para receberes as últimas notícias.</p>
-                    <form onSubmit={handleNewsletterSubmit} className="footer-newsletter">
-                        <input
-                            type="email"
-                            placeholder="Seu email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                        <button type="submit">Envio</button>
-                    </form>
-                    <div className="footer-social">
-                        <a href="#facebook" className="social-icon" title="Facebook">f</a>
-                        <a href="#instagram" className="social-icon" title="Instagram">📷</a>
-                        <a href="#twitter" className="social-icon" title="Twitter">𝕏</a>
-                    </div>
-                </div>
-            </div>
-
-            <div className="footer-bottom">
-                © 2025 MAPHOTEL. All rights reserved.
             </div>
         </footer>
     );
