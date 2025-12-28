@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pagamento;
+use App\Enums\PagamentoEstado;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PagamentoController extends Controller
 {
@@ -12,7 +15,10 @@ class PagamentoController extends Controller
      */
     public function index()
     {
-        return Pagamento::with('reserva')->get();
+        return Pagamento::query()
+            ->with(['reserva', 'reserva.utilizador', 'reserva.quarto'])
+            ->orderByDesc('id')
+            ->get();
     }
 
     /**
@@ -25,7 +31,7 @@ class PagamentoController extends Controller
             'valor' => 'required|numeric',
             'metodo' => 'required',
             'pago_em' => 'nullable|date',
-            'status' => 'required',
+            'estado' => ['required', 'string', Rule::in(array_map(fn($c) => $c->value, PagamentoEstado::cases()))],
         ]);
 
         Pagamento::create($validated);
@@ -40,7 +46,7 @@ class PagamentoController extends Controller
      */
     public function show(Pagamento $pagamento)
     {
-        return $pagamento;
+        return $pagamento->load(['reserva', 'reserva.utilizador', 'reserva.quarto']);
     }
 
     /**
@@ -51,6 +57,8 @@ class PagamentoController extends Controller
         $validated = $request->validate([
             'valor' => 'numeric',
             'pago_em' => 'date',
+            'metodo' => 'sometimes|string',
+            'estado' => ['sometimes', 'string', Rule::in(array_map(fn($c) => $c->value, PagamentoEstado::cases()))],
         ]);
 
         $pagamento->update($validated);
@@ -58,6 +66,24 @@ class PagamentoController extends Controller
         return response()->json([
             'message' => 'Pagamento editado com sucesso!',
         ]);
+    }
+
+    /**
+     * Gera uma fatura em PDF para um pagamento.
+     */
+    public function fatura(Pagamento $pagamento)
+    {
+        $pagamento->load(['reserva', 'reserva.utilizador', 'reserva.quarto']);
+
+        $pdf = Pdf::loadView('invoices.pagamento', [
+            'pagamento' => $pagamento,
+            'reserva' => $pagamento->reserva,
+            'cliente' => $pagamento->reserva?->utilizador,
+            'quarto' => $pagamento->reserva?->quarto,
+        ])->setPaper('a4');
+
+        $filename = 'fatura_pagamento_' . $pagamento->id . '.pdf';
+        return $pdf->download($filename);
     }
 
     /**

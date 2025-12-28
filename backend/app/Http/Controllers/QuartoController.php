@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Quarto;
+use App\Enums\QuartoEstado;
+use App\Enums\QuartoTipo;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class QuartoController extends Controller
 {
@@ -29,9 +32,9 @@ class QuartoController extends Controller
         $validated = $request->validate([
             'numero' => 'required|integer',
             'andar_id' => 'required|exists:andars,id',
-            'tipo' => 'required|string',
+            'tipo' => ['required', 'string', Rule::in(array_map(fn($c) => $c->value, QuartoTipo::cases()))],
             'capacidade' => 'required|integer',
-            'estado' => 'required|string',
+            'estado' => ['required', 'string', Rule::in(array_map(fn($c) => $c->value, QuartoEstado::cases()))],
             'preco_por_dia' => 'required|numeric',
             'posicao_x' => 'nullable|integer',
             'posicao_y' => 'nullable|integer',
@@ -68,9 +71,9 @@ class QuartoController extends Controller
         $validated = $request->validate([
             'numero' => 'integer',
             'andar_id' => 'exists:andars,id',
-            'tipo' => 'string',
+            'tipo' => ['string', Rule::in(array_map(fn($c) => $c->value, QuartoTipo::cases()))],
             'capacidade' => 'integer',
-            'estado' => 'string',
+            'estado' => ['string', Rule::in(array_map(fn($c) => $c->value, QuartoEstado::cases()))],
             'preco_por_dia' => 'numeric',
             'posicao_x' => 'nullable|integer',
             'posicao_y' => 'nullable|integer',

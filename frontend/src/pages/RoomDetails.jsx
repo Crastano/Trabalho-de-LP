@@ -24,8 +24,10 @@ export default function RoomDetails() {
   const [loading, setLoading] = useState(!initialQuarto || !hasPreco(initialQuarto))
   const [bookingData, setBookingData] = useState({
     nome: user?.name || "",
+    telefone: user?.telefone || "",
     checkIn: "",
     checkOut: "",
+    metodo_pagamento: "mbway",
   })
   const [submitting, setSubmitting] = useState(false)
   const [selectedRoom, setSelectedRoom] = useState(null)
@@ -156,16 +158,36 @@ export default function RoomDetails() {
 
     try {
       setSubmitting(true)
+
+      const quartoId = selectedRoom?.id ?? quarto.id
+
+      // Atualiza telefone do utilizador (se necessário)
+      const tel = (bookingData.telefone || "").trim()
+      if (tel && tel !== (user?.telefone || "")) {
+        try {
+          await api.put("/user", { telefone: tel })
+        } catch {
+          // não bloqueia a reserva; apenas melhora dados de contacto
+        }
+      }
+
       await api.post("/reservas", {
-        quarto_id: quarto.id,
+        quarto_id: quartoId,
         data_entrada: bookingData.checkIn,
         data_saida: bookingData.checkOut,
+        metodo_pagamento: bookingData.metodo_pagamento,
       })
       alert("Reserva criada com sucesso!")
       navigate("/reservations")
     } catch (error) {
       console.error("Erro ao criar reserva:", error)
-      alert("Erro ao criar reserva. Tente novamente.")
+      const msg =
+        error?.response?.data?.message ||
+        (error?.response?.data?.errors
+          ? Object.values(error.response.data.errors).flat()?.[0]
+          : null) ||
+        "Erro ao criar reserva. Tente novamente."
+      alert(msg)
     } finally {
       setSubmitting(false)
     }
@@ -725,6 +747,17 @@ export default function RoomDetails() {
               />
             </div>
 
+            <div className="form-group">
+              <label>Telefone</label>
+              <input
+                type="text"
+                name="telefone"
+                value={bookingData.telefone}
+                onChange={handleInputChange}
+                placeholder="Ex: 912 000 000"
+              />
+            </div>
+
             <div className="date-row">
               <div className="form-group">
                 <label>Check-in</label>
@@ -734,6 +767,14 @@ export default function RoomDetails() {
                 <label>Check-out</label>
                 <input type="date" name="checkOut" value={bookingData.checkOut} onChange={handleInputChange} required />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label>Método de pagamento</label>
+              <select name="metodo_pagamento" value={bookingData.metodo_pagamento} onChange={handleInputChange} required>
+                <option value="mbway">MB WAY</option>
+                <option value="cartao">Cartão</option>
+              </select>
             </div>
 
             <button type="submit" className="booking-btn" disabled={submitting}>

@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext"
 import api from "../api/api"
 import elegantHotelImg from "../assets/images/elegant-hotel.jpg"
 import luxuryBedroomHotelImg from "../assets/images/luxury-bedroom-hotel.jpg"
+import smallHotelImg from "../assets/images/small-hotel.jpg"
 import { resolveImageUrl } from "../utils/imageUrl"
 
 export default function Reservations() {
@@ -32,19 +33,19 @@ export default function Reservations() {
         setReservas([
           {
             id: 1,
-            quarto: { nome: "Quarto Padrão", imagem: elegantHotelImg },
-            data_entrada: "2024-01-15",
-            data_saida: "2024-01-18",
-            status: "confirmada",
-            preco_total: 420,
+            quarto: { nome: "Quarto Padrão", imagem: elegantHotelImg, preco_por_dia: 140 },
+            data_inicio: "2024-01-15",
+            data_fim: "2024-01-18",
+            estado: "confirmado",
+            pagamento: { valor: 420 },
           },
           {
             id: 2,
-            quarto: { nome: "Quarto Executivo", imagem: luxuryBedroomHotelImg },
-            data_entrada: "2024-02-10",
-            data_saida: "2024-02-12",
-            status: "pendente",
-            preco_total: 560,
+            quarto: { nome: "Quarto Executivo", imagem: luxuryBedroomHotelImg, preco_por_dia: 280 },
+            data_inicio: "2024-02-10",
+            data_fim: "2024-02-12",
+            estado: "pendente",
+            pagamento: { valor: 560 },
           },
         ])
       } finally {
@@ -70,21 +71,82 @@ export default function Reservations() {
     }
   }
 
+  const parseDate = (dateString) => {
+    if (!dateString) return null
+    const date = new Date(dateString)
+    if (Number.isNaN(date.getTime())) return null
+    return date
+  }
+
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("pt-PT", {
+    const date = parseDate(dateString)
+    if (!date) return "—"
+    return date.toLocaleDateString("pt-PT", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     })
   }
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "confirmada":
+  const getNights = (inicio, fim) => {
+    const start = parseDate(inicio)
+    const end = parseDate(fim)
+    if (!start || !end) return null
+    const dayMs = 1000 * 60 * 60 * 24
+    const diff = Math.round((end.getTime() - start.getTime()) / dayMs)
+    if (!Number.isFinite(diff) || diff <= 0) return null
+    return diff
+  }
+
+  const getTotalPrice = (reserva) => {
+    const pagamentoValor = reserva?.pagamento?.valor
+    if (typeof pagamentoValor === "number" && Number.isFinite(pagamentoValor)) return pagamentoValor
+
+    const nights = getNights(reserva?.data_inicio, reserva?.data_fim)
+    const precoDia = reserva?.quarto?.preco_por_dia
+    if (typeof precoDia === "number" && Number.isFinite(precoDia) && nights) return precoDia * nights
+
+    if (typeof precoDia === "string" && precoDia.trim() !== "" && nights) {
+      const parsed = Number(precoDia)
+      if (Number.isFinite(parsed)) return parsed * nights
+    }
+
+    return null
+  }
+
+  const formatPrice = (value) => {
+    if (value == null) return "—"
+    const number = typeof value === "string" ? Number(value) : value
+    if (typeof number !== "number" || !Number.isFinite(number)) return "—"
+    return `${number.toFixed(2)}€`
+  }
+
+  const getEstadoLabel = (estado) => {
+    switch ((estado || "").toLowerCase()) {
+      case "pendente":
+        return "Pendente"
+      case "confirmado":
+        return "Confirmado"
+      case "cancelado":
+        return "Cancelado"
+      case "checkedin":
+        return "Check-in"
+      case "checkedout":
+        return "Check-out"
+      default:
+        return estado ? String(estado) : "Pendente"
+    }
+  }
+
+  const getStatusColor = (estado) => {
+    switch ((estado || "").toLowerCase()) {
+      case "confirmado":
+      case "checkedin":
+      case "checkedout":
         return "#22c55e"
       case "pendente":
         return "#f59e0b"
-      case "cancelada":
+      case "cancelado":
         return "#ef4444"
       default:
         return "#6b7280"
@@ -108,9 +170,13 @@ export default function Reservations() {
 
                 /* HERO BANNER */
                 .reservations-hero {
-                    background: #1e3a8a;
+                  background: #010101ff;
+                  background-image: linear-gradient(rgba(0, 0, 0, 0.57),  rgba(0, 0, 0, 0.78)), url('${smallHotelImg}');
+                  background-size: cover;
+                  background-position: center;
                     color: white;
                     text-align: center;
+                    height: 300px;
                     padding: 60px 20px 40px;
                 }
 
@@ -360,15 +426,15 @@ export default function Reservations() {
                   <div className="reservation-details">
                     <h3>{reserva.quarto?.nome || "Quarto"}</h3>
                     <div className="reservation-dates">
-                      {formatDate(reserva.data_entrada)} - {formatDate(reserva.data_saida)}
+                      {formatDate(reserva.data_inicio)} - {formatDate(reserva.data_fim)}
                     </div>
-                    <div className="reservation-status" style={{ backgroundColor: getStatusColor(reserva.status) }}>
-                      {reserva.status || "Pendente"}
+                    <div className="reservation-status" style={{ backgroundColor: getStatusColor(reserva.estado) }}>
+                      {getEstadoLabel(reserva.estado)}
                     </div>
                   </div>
                   <div className="reservation-actions">
-                    <div className="reservation-price">{reserva.preco_total}€</div>
-                    {reserva.status?.toLowerCase() !== "cancelada" && (
+                    <div className="reservation-price">{formatPrice(getTotalPrice(reserva))}</div>
+                    {reserva.estado?.toLowerCase() !== "cancelado" && (
                       <button className="cancel-btn" onClick={() => handleCancelReservation(reserva.id)}>
                         Cancelar Reserva
                       </button>

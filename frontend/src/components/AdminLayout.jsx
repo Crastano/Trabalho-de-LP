@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react"
 import { Link, useLocation } from "react-router"
+
+const PREF_THEME_KEY = "pref_theme"
+const THEME_EVENT = "pref-theme-changed"
 
 const navItems = [
   { label: "Dashboard", path: "/admin/dashboard", icon: "D" },
@@ -13,22 +17,69 @@ const navItems = [
 
 export default function AdminLayout({ title, subtitle, actions, children }) {
   const location = useLocation()
+  const [theme, setTheme] = useState("claro")
+
+  useEffect(() => {
+    const readTheme = () => {
+      const t = localStorage.getItem(PREF_THEME_KEY)
+      setTheme(t === "escuro" ? "escuro" : "claro")
+    }
+
+    readTheme()
+    window.addEventListener("storage", readTheme)
+    window.addEventListener(THEME_EVENT, readTheme)
+    return () => {
+      window.removeEventListener("storage", readTheme)
+      window.removeEventListener(THEME_EVENT, readTheme)
+    }
+  }, [])
 
   return (
-    <div className="admin-shell">
+    <div className={`admin-shell ${theme === "escuro" ? "theme-dark" : "theme-light"}`}>
       <style>{`
         .admin-shell {
+          --bg: #e9edf9;
+          --surface: #ffffff;
+          --border: #d9dde8;
+          --text: #0f172a;
+          --text-strong: #111827;
+          --muted: #4b5563;
+          --muted-2: #6b7280;
+          --hover: #f1f5f9;
+          --active-bg: #e9eefc;
+          --active-border: #d9e2ff;
+          --input-border: #d1d5db;
+          --table-head: #f9fafb;
+          --card-border: #f4d77f;
+          --shadow: rgba(15, 23, 42, 0.08);
+
           display: flex;
           min-height: 100vh;
-          background: #e9edf9;
-          color: #0f172a;
+          background: var(--bg);
+          color: var(--text);
           font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+        }
+
+        .admin-shell.theme-dark {
+          --bg: #0f172a;
+          --surface: #111827;
+          --border: #1f2937;
+          --text: #f8fafc;
+          --text-strong: #f9fafb;
+          --muted: #e5e7eb;
+          --muted-2: #d1d5db;
+          --hover: #1f2937;
+          --active-bg: #1f2937;
+          --active-border: #d9ddeb;
+          --input-border: #4b5563;
+          --table-head: #0f172a;
+          --shadow: rgba(0, 0, 0, 0.25);
         }
 
         .admin-sidebar {
           width: 230px;
-          background: #ffffff;
-          border-right: 1px solid #d9dde8;
+          background: var(--surface);
+          border-right: 1px solid var(--border);
           padding: 18px 16px;
           display: flex;
           flex-direction: column;
@@ -39,7 +90,7 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
           font-weight: 800;
           font-size: 18px;
           letter-spacing: -0.2px;
-          color: #111827;
+          color: var(--text-strong);
           margin-bottom: 6px;
         }
 
@@ -55,7 +106,7 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
           gap: 12px;
           padding: 9px 12px;
           border-radius: 10px;
-          color: #4b5563;
+          color: var(--muted);
           text-decoration: none;
           font-size: 14px;
           font-weight: 600;
@@ -64,13 +115,13 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
         }
 
         .admin-nav a:hover {
-          background: #f1f5f9;
-          color: #111827;
+          background: var(--hover);
+          color: var(--text-strong);
         }
 
         .admin-nav a.active {
-          background: #e9eefc;
-          border-color: #d9e2ff;
+          background: var(--active-bg);
+          border-color: var(--active-border);
           color: #1d4ed8;
           font-weight: 700;
         }
@@ -79,14 +130,14 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
           width: 28px;
           height: 28px;
           border-radius: 8px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
+          background: var(--hover);
+          border: 1px solid var(--border);
           display: inline-flex;
           align-items: center;
           justify-content: center;
           font-size: 12px;
           font-weight: 800;
-          color: #111827;
+          color: var(--text-strong);
         }
 
         .admin-main {
@@ -107,14 +158,14 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
           margin: 0;
           font-size: 32px;
           font-weight: 800;
-          color: #0f172a;
+          color: var(--text);
           letter-spacing: -0.4px;
         }
 
         .admin-top .subtitle {
           margin: 0;
           font-size: 14px;
-          color: #1f2937;
+          color: var(--muted);
           font-weight: 700;
           letter-spacing: -0.1px;
         }
@@ -141,22 +192,22 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
         .admin-grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 
         .admin-card {
-          background: #ffffff;
-          border: 2px solid #f4d77f;
+          background: var(--surface);
+          border: 2px solid var(--card-border);
           border-radius: 12px;
           padding: 16px;
-          box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+          box-shadow: 0 2px 8px var(--shadow);
         }
 
         .admin-card h3 {
           margin: 0 0 8px 0;
           font-size: 16px;
-          color: #111827;
+          color: var(--text-strong);
         }
 
         .admin-card p {
           margin: 0;
-          color: #4b5563;
+          color: var(--muted);
           font-size: 14px;
         }
 
@@ -169,12 +220,12 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
         .admin-kpi .value {
           font-size: 22px;
           font-weight: 800;
-          color: #111827;
+          color: var(--text-strong);
         }
 
         .admin-kpi .label {
           font-size: 13px;
-          color: #6b7280;
+          color: var(--muted-2);
         }
 
         .admin-kpi .trend {
@@ -191,16 +242,16 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
         .admin-table th,
         .admin-table td {
           padding: 10px 12px;
-          border-bottom: 1px solid #e5e7eb;
+          border-bottom: 1px solid var(--border);
           font-size: 13px;
           text-align: left;
-          color: #0f172a;
+          color: var(--text);
         }
 
         .admin-table th {
-          color: #6b7280;
+          color: var(--muted-2);
           font-weight: 600;
-          background: #f9fafb;
+          background: var(--table-head);
         }
 
         .badge {
@@ -239,6 +290,11 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
           color: #111827;
         }
 
+        .admin-shell.theme-dark .admin-btn.secondary {
+          background: #1f2937;
+          color: #f9fafb;
+        }
+
         .admin-btn:hover { transform: translateY(-1px); }
 
         .admin-filters {
@@ -249,12 +305,12 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
         }
 
         .admin-input, .admin-select {
-          border: 1px solid #d1d5db;
-          background: #ffffff;
+          border: 1px solid var(--input-border);
+          background: var(--surface);
           border-radius: 10px;
           padding: 9px 12px;
           font-size: 13px;
-          color: #111827;
+          color: var(--text);
           min-width: 160px;
         }
 
@@ -287,7 +343,7 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
           gap: 12px;
           margin-top: 8px;
           font-size: 12px;
-          color: #6b7280;
+          color: var(--muted-2);
           flex-wrap: wrap;
         }
 
@@ -300,6 +356,11 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
           font-weight: 600;
         }
 
+        .admin-shell.theme-dark .pill {
+          background: #1f2937;
+          color: #f9fafb;
+        }
+
         .admin-section-header {
           display: flex;
           justify-content: space-between;
@@ -309,6 +370,9 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
 
         .admin-section-header h3 { margin: 0; font-size: 16px; color: #111827; }
         .admin-section-header p { margin: 0; font-size: 13px; color: #6b7280; }
+
+        .admin-shell.theme-dark .admin-section-header h3 { color: var(--text-strong); }
+        .admin-shell.theme-dark .admin-section-header p { color: var(--muted-2); }
       `}</style>
 
       <aside className="admin-sidebar">

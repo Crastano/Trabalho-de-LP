@@ -9,6 +9,7 @@ use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\PagamentoController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\ProfileController;
 
 Route::post('/registar', [AuthController::class, 'registar']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -25,6 +26,9 @@ Route::middleware(['auth:sanctum', 'ativo'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    Route::put('/user', [ProfileController::class, 'update']);
+    Route::put('/user/password', [ProfileController::class, 'updatePassword']);
 
     Route::get('/andares', [AndarController::class, 'index']);
     Route::get('/andares/{andar}', [AndarController::class, 'show']);
@@ -54,6 +58,9 @@ Route::middleware(['auth:sanctum', 'ativo', 'administrador'])->group(function ()
     Route::delete('/andares/{andar}', [AndarController::class, 'destroy']);
 
     // PAGAMENTOS
+    Route::get('/pagamentos', [PagamentoController::class, 'index']);
+    Route::get('/pagamentos/{pagamento}', [PagamentoController::class, 'show']);
+    Route::get('/pagamentos/{pagamento}/fatura', [PagamentoController::class, 'fatura']);
     Route::post('/pagamentos', [PagamentoController::class, 'store']);
     Route::put('/pagamentos/{pagamento}', [PagamentoController::class, 'update']);
     Route::delete('/pagamentos/{pagamento}', [PagamentoController::class, 'destroy']);
