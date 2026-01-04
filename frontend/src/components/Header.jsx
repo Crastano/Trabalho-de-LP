@@ -184,8 +184,12 @@ export default function Header() {
                 }
             `}</style>
 
-      <Link to="/" className="header-logo">
-        🏨 MAPHOTEL
+      <Link to="/" className="shrink-0">
+        <img
+          src="./src/assets/images/Logo.png"
+          alt="Logo"
+          className="w-10 h-10 rounded-full object-cover"
+        />
       </Link>
 
       <nav className="header-nav">
