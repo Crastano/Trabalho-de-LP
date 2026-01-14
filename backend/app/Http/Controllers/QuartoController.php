@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Quarto;
+use App\Models\Reserva;
 use App\Enums\QuartoEstado;
 use App\Enums\QuartoTipo;
+use App\Enums\ReservaEstado;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class QuartoController extends Controller
 {
@@ -22,6 +25,68 @@ class QuartoController extends Controller
         }
 
         return $query->get();
+    }
+
+    /**
+     * Disponibilidade de quartos num intervalo de datas.
+     * Retorna quartos com campo extra "disponivel" calculado por:
+     * - estado do quarto (ex.: ocupado)
+     * - existência de reservas sobrepostas no intervalo
+     */
+    public function disponibilidade(Request $request)
+    {
+        $validated = $request->validate([
+            'tipo' => 'nullable|string',
+            'data_inicio' => 'required|date',
+            'data_fim' => 'required|date|after:data_inicio',
+        ]);
+
+        $tipo = $validated['tipo'] ?? null;
+        $dataInicio = $validated['data_inicio'];
+        $dataFim = $validated['data_fim'];
+
+        $query = Quarto::orderBy('numero', 'asc');
+
+        if ($tipo) {
+            $query->whereRaw('LOWER(tipo) = ?', [mb_strtolower($tipo)]);
+        }
+
+        $quartos = $query->get();
+        $quartoIds = $quartos->pluck('id');
+
+        $ocupadosIds = Reserva::whereIn('quarto_id', $quartoIds)
+            ->where('estado', '!=', ReservaEstado::CANCELADO->value)
+            ->where(function ($q) use ($dataInicio, $dataFim) {
+                $q->where('data_inicio', '<', $dataFim)
+                    ->where('data_fim', '>', $dataInicio);
+            })
+            ->pluck('quarto_id')
+            ->unique()
+            ->values();
+
+        $ocupadosSet = array_fill_keys($ocupadosIds->all(), true);
+
+        return $quartos->map(function ($quarto) use ($ocupadosSet) {
+            $estadoRaw = $quarto->estado;
+            if ($estadoRaw instanceof \BackedEnum) {
+                $estado = $estadoRaw->value;
+            } elseif (is_string($estadoRaw)) {
+                $estado = $estadoRaw;
+            } elseif ($estadoRaw === null) {
+                $estado = '';
+            } else {
+                $estado = (string) $estadoRaw;
+            }
+
+            $estado = mb_strtolower($estado);
+            $ocupadoPorEstado = $estado === 'ocupado';
+
+            $disponivel = !$ocupadoPorEstado && !isset($ocupadosSet[$quarto->id]);
+
+            return array_merge($quarto->toArray(), [
+                'disponivel' => $disponivel,
+            ]);
+        });
     }
 
     /**
@@ -85,6 +150,22 @@ class QuartoController extends Controller
             'tv' => 'nullable|boolean',
             'descricao' => 'nullable|string',
         ]);
+
+        // Evita inconsistência: não permitir marcar como LIVRE quando existe uma reserva ativa agora.
+        if (array_key_exists('estado', $validated) && mb_strtolower($validated['estado']) === QuartoEstado::LIVRE->value) {
+            $now = Carbon::now('UTC');
+            $hasReservaAtivaAgora = Reserva::where('quarto_id', $quarto->id)
+                ->where('estado', '!=', ReservaEstado::CANCELADO->value)
+                ->where('data_inicio', '<=', $now)
+                ->where('data_fim', '>', $now)
+                ->exists();
+
+            if ($hasReservaAtivaAgora) {
+                return response()->json([
+                    'message' => 'Não é possível marcar como livre: existe uma reserva ativa neste momento.',
+                ], 422);
+            }
+        }
 
         $quarto->update($validated);
 

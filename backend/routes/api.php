@@ -20,6 +20,7 @@ Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 
 // Quartos públicos (sem autenticação)
 Route::get('/quartos', [QuartoController::class, 'index']);
+Route::get('/quartos/disponibilidade', [QuartoController::class, 'disponibilidade']);
 Route::get('/quartos/{quarto}', [QuartoController::class, 'show']);
 
 Route::middleware(['auth:sanctum', 'ativo'])->group(function () {
@@ -36,6 +37,8 @@ Route::middleware(['auth:sanctum', 'ativo'])->group(function () {
     Route::get('/reservas', [ReservaController::class, 'index']);
     Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
     Route::post('/reservas', [ReservaController::class, 'store']);
+    Route::post('/reservas/{reserva}/pagar', [ReservaController::class, 'pagar']);
+    Route::get('/reservas/{reserva}/fatura', [ReservaController::class, 'fatura']);
     Route::put('/reservas/{reserva}', [ReservaController::class, 'update']);
     Route::delete('/reservas/{reserva}', [ReservaController::class, 'destroy']);
 });

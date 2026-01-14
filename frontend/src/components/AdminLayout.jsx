@@ -285,6 +285,12 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
           box-shadow: 0 2px 6px rgba(0,0,0,0.08);
         }
 
+        .admin-btn.danger {
+          background: #ef4444;
+          color: #ffffff;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
         .admin-btn.secondary {
           background: #e5e7eb;
           color: #111827;
@@ -296,6 +302,162 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
         }
 
         .admin-btn:hover { transform: translateY(-1px); }
+
+        .admin-map-card {
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          padding: 14px;
+          background: linear-gradient(180deg, var(--surface) 0%, rgba(248, 250, 252, 0.75) 100%);
+          box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+        }
+
+        .admin-shell.theme-dark .admin-map-card {
+          background: linear-gradient(180deg, var(--surface) 0%, rgba(2, 6, 23, 0.15) 100%);
+        }
+
+        .admin-map-toolbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin-bottom: 12px;
+        }
+
+        .admin-map-date-nav {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 10px;
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          background: rgba(248, 250, 252, 0.9);
+        }
+
+        .admin-shell.theme-dark .admin-map-date-nav {
+          background: rgba(15, 23, 42, 0.55);
+        }
+
+        .admin-map-date-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          cursor: pointer;
+          font-size: 18px;
+          line-height: 1;
+          color: #1d4ed8;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.12s ease, background 0.12s ease;
+        }
+
+        .admin-map-date-btn:hover {
+          background: var(--hover);
+          transform: translateY(-1px);
+        }
+
+        .admin-map-date-label {
+          font-size: 13px;
+          color: var(--text);
+          font-weight: 800;
+          min-width: 150px;
+          text-align: center;
+          text-transform: capitalize;
+        }
+
+        .admin-map-layout {
+          display: grid;
+          grid-template-columns: 1fr 260px;
+          gap: 14px;
+          align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+          .admin-map-layout { grid-template-columns: 1fr; }
+        }
+
+        .admin-map-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding: 12px;
+          border-radius: 14px;
+          border: 1px solid var(--border);
+          background: linear-gradient(180deg, var(--surface) 0%, rgba(241, 245, 249, 0.95) 100%);
+        }
+
+        .admin-shell.theme-dark .admin-map-grid {
+          background: linear-gradient(180deg, var(--surface) 0%, rgba(2, 6, 23, 0.22) 100%);
+        }
+
+        .admin-map-row {
+          display: grid;
+          grid-template-columns: repeat(var(--cols), 1fr);
+          gap: 8px;
+        }
+
+        .admin-map-cell {
+          height: 44px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          color: #ffffff;
+          font-weight: 900;
+          box-shadow: 0 10px 18px rgba(2, 6, 23, 0.12);
+          cursor: pointer;
+          transition: transform 0.12s ease, filter 0.12s ease;
+        }
+
+        .admin-map-cell:hover { transform: translateY(-1px); filter: brightness(0.98); }
+        .admin-map-cell:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .admin-map-cell.free { background: #22c55e; }
+        .admin-map-cell.occupied { background: #f97316; }
+        .admin-map-cell.reserved { background: #ef4444; }
+
+        .admin-map-side {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .admin-map-legend {
+          padding: 12px;
+          border-radius: 14px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .admin-map-legend .item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          color: var(--muted);
+          font-weight: 700;
+        }
+
+        .admin-map-legend .swatch {
+          width: 18px;
+          height: 18px;
+          border-radius: 6px;
+        }
+
+        .admin-map-hint {
+          padding: 12px;
+          border-radius: 14px;
+          border: 1px solid var(--active-border);
+          background: var(--active-bg);
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 700;
+          box-shadow: 0 10px 18px rgba(2, 6, 23, 0.06);
+        }
 
         .admin-filters {
           display: flex;

@@ -12,7 +12,35 @@ export default function AdminRooms() {
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const [draftById, setDraftById] = useState({})
+
+  const toYmd = (d) => {
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, "0")
+    const dd = String(d.getDate()).padStart(2, "0")
+    return `${yyyy}-${mm}-${dd}`
+  }
+
+  const fromYmd = (ymd) => {
+    if (!ymd || typeof ymd !== "string") return null
+    const [y, m, d] = ymd.split("-").map((n) => Number(n))
+    if (!y || !m || !d) return null
+    const dt = new Date(y, m - 1, d)
+    if (Number.isNaN(dt.getTime())) return null
+    return dt
+  }
+
+  const addDaysYmd = (ymd, days) => {
+    const dt = fromYmd(ymd)
+    if (!dt) return ""
+    dt.setDate(dt.getDate() + days)
+    return toYmd(dt)
+  }
+
+  const [quickMapDate, setQuickMapDate] = useState(() => toYmd(new Date()))
+
+  const [disponivelById, setDisponivelById] = useState({})
 
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -68,6 +96,50 @@ export default function AdminRooms() {
     fetchRooms()
   }, [])
 
+  // Disponibilidade por reservas (hoje -> amanhã) para o mapa rápido
+  useEffect(() => {
+    let intervalId
+
+    const fetchDisponibilidade = async () => {
+      try {
+        const dataInicio = quickMapDate || toYmd(new Date())
+        const dataFim = addDaysYmd(dataInicio, 1)
+
+        const resp = await api.get("/quartos/disponibilidade", {
+          params: { data_inicio: dataInicio, data_fim: dataFim },
+        })
+        const data = Array.isArray(resp.data) ? resp.data : resp.data?.data || []
+        setDisponivelById(Object.fromEntries(data.map((q) => [q.id, q.disponivel !== false])))
+      } catch (err) {
+        // Não bloquear a página se falhar; apenas mantém o mapa por estado.
+        console.error("Erro ao carregar disponibilidade", err)
+      }
+    }
+
+    fetchDisponibilidade()
+    intervalId = setInterval(fetchDisponibilidade, 30000)
+
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+    }
+  }, [quickMapDate])
+
+  const quickMapLabel = useMemo(() => {
+    const d = fromYmd(quickMapDate)
+    if (!d) return quickMapDate
+    return new Intl.DateTimeFormat("pt-PT", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+    }).format(d)
+  }, [quickMapDate])
+
+  const shiftQuickMap = (deltaDays) => {
+    const next = addDaysYmd(quickMapDate, deltaDays)
+    if (!next) return
+    setQuickMapDate(next)
+  }
+
   useEffect(() => {
     const fetchAndares = async () => {
       try {
@@ -110,10 +182,47 @@ export default function AdminRooms() {
       }
     } catch (err) {
       console.error("Erro ao atualizar quarto", err)
+      const message = err?.response?.data?.message
+      if (message) mostrarErroMensagem(message)
       // Re-sync para não ficar com UI divergente da BD
       await fetchRooms()
     } finally {
       setSavingId(null)
+    }
+  }
+
+  const deleteRoom = async (room) => {
+    if (!room?.id) return
+    const numero = room.numero || room.id
+    const ok = window.confirm(`Eliminar o quarto ${numero}? Esta ação não pode ser desfeita.`)
+    if (!ok) return
+
+    setDeletingId(room.id)
+    try {
+      const resp = await api.delete(`/quartos/${room.id}`)
+      mostrarSucessoMensagem(resp?.data?.message || "Quarto eliminado com sucesso!")
+
+      setRooms((prev) => prev.filter((r) => r.id !== room.id))
+
+      setDraftById((prev) => {
+        const next = { ...prev }
+        delete next[room.id]
+        return next
+      })
+
+      setDisponivelById((prev) => {
+        const next = { ...prev }
+        delete next[room.id]
+        return next
+      })
+    } catch (err) {
+      console.error("Erro ao eliminar quarto", err)
+      const message = err?.response?.data?.message || "Erro ao eliminar quarto."
+      mostrarErroMensagem(message)
+      // Re-sync para não ficar com UI divergente da BD
+      await fetchRooms()
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -581,15 +690,26 @@ export default function AdminRooms() {
                       </div>
                     </td>
                     <td style={{ textAlign: "right", color: "#1d4ed8", fontWeight: 600 }}>
-                      <button
-                        type="button"
-                        className="admin-btn"
-                        onClick={() => saveRoom(room)}
-                        disabled={savingId === room.id}
-                        style={{ opacity: savingId === room.id ? 0.6 : 1 }}
-                      >
-                        Guardar
-                      </button>
+                      <div style={{ display: "inline-flex", gap: "8px", justifyContent: "flex-end" }}>
+                        <button
+                          type="button"
+                          className="admin-btn"
+                          onClick={() => saveRoom(room)}
+                          disabled={savingId === room.id || deletingId === room.id}
+                          style={{ opacity: savingId === room.id || deletingId === room.id ? 0.6 : 1 }}
+                        >
+                          Guardar
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-btn danger"
+                          onClick={() => deleteRoom(room)}
+                          disabled={savingId === room.id || deletingId === room.id}
+                          style={{ opacity: savingId === room.id || deletingId === room.id ? 0.6 : 1 }}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -602,31 +722,81 @@ export default function AdminRooms() {
       <div className="admin-card">
         <div className="admin-section-header">
           <h3>Mapa rápido</h3>
-          <p style={{ margin: 0, color: "#6b7280" }}>Clique para alternar livre/ocupado</p>
+          <p style={{ margin: 0, color: "#6b7280" }}>Disponibilidade por reservas em {quickMapLabel}</p>
         </div>
-        <div style={{ display: "grid", gap: "10px" }}>
-          {grid.map((row, rIdx) => (
-            <div key={rIdx} style={{ display: "grid", gridTemplateColumns: `repeat(${row.length}, 1fr)`, gap: "6px" }}>
-              {row.map((room) => (
-                <button
-                  key={room.id}
-                  onClick={() => updateRoom(room.id, { estado: (room.estado || "").toLowerCase() === "livre" ? "ocupado" : "livre" })}
-                  disabled={savingId === room.id}
-                  style={{
-                    height: "42px",
-                    borderRadius: "10px",
-                    border: "1px solid #e5e7eb",
-                    background: (room.estado || "").toLowerCase() === "livre" ? "#22c55e" : "#ef4444",
-                    color: "#fff",
-                    fontWeight: 700,
-                    boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-                  }}
-                >
-                  {room.numero || room.id}
-                </button>
+
+        <div className="admin-map-card">
+          <div className="admin-map-toolbar">
+            <div className="admin-map-date-nav">
+              <button type="button" className="admin-map-date-btn" onClick={() => shiftQuickMap(-1)} aria-label="Dia anterior">
+                ‹
+              </button>
+              <div className="admin-map-date-label">{quickMapLabel}</div>
+              <button type="button" className="admin-map-date-btn" onClick={() => shiftQuickMap(1)} aria-label="Dia seguinte">
+                ›
+              </button>
+            </div>
+
+            <input className="admin-input" type="date" value={quickMapDate} onChange={(e) => setQuickMapDate(e.target.value)} />
+          </div>
+
+          <div className="admin-map-layout">
+            <div className="admin-map-grid">
+              {grid.map((row, rIdx) => (
+                <div key={rIdx} className="admin-map-row" style={{ "--cols": row.length }}>
+                  {row.map((room) => {
+                    const estado = (room.estado || "").toLowerCase()
+                    const isLivre = estado === "livre"
+                    const isReserved = disponivelById[room.id] === false
+                    const status = isReserved ? "reserved" : isLivre ? "free" : "occupied"
+
+                    return (
+                      <button
+                        key={room.id}
+                        className={`admin-map-cell ${status}`}
+                        onClick={() => {
+                          const reservadoNaData = isReserved && isLivre
+                          if (reservadoNaData) {
+                            mostrarErroMensagem("Este quarto tem reserva na data selecionada.")
+                            return
+                          }
+                          updateRoom(room.id, { estado: isLivre ? "ocupado" : "livre" })
+                        }}
+                        disabled={savingId === room.id}
+                        title={
+                          isReserved
+                            ? `Quarto ${room.numero || room.id} - Reservado (${quickMapLabel})`
+                            : isLivre
+                            ? `Quarto ${room.numero || room.id} - Livre`
+                            : `Quarto ${room.numero || room.id} - Ocupado (manual)`
+                        }
+                      >
+                        {room.numero || room.id}
+                      </button>
+                    )
+                  })}
+                </div>
               ))}
             </div>
-          ))}
+
+            <div className="admin-map-side">
+              <div className="admin-map-legend">
+                <div className="item">
+                  <span className="swatch" style={{ background: "#22c55e" }} />
+                  <span>Livre</span>
+                </div>
+                <div className="item">
+                  <span className="swatch" style={{ background: "#ef4444" }} />
+                  <span>Reservado</span>
+                </div>
+                <div className="item">
+                  <span className="swatch" style={{ background: "#f97316" }} />
+                  <span>Ocupado (manual)</span>
+                </div>
+              </div>
+              <div className="admin-map-hint">Clique num quarto livre para alternar livre/ocupado. Reservas bloqueiam a alteração na data escolhida.</div>
+            </div>
+          </div>
         </div>
       </div>
     </AdminLayout>

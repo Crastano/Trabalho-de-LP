@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import api from '../api/api';
 import { mostrarErroMensagem, mostrarSucessoMensagem } from '../utils/notify';
 import { ClipLoader } from 'react-spinners';
@@ -11,9 +11,12 @@ import whiteUmbrellasImg from '../assets/images/white-umbrellas.jpg';
 export default function Login() {
     const { updateAuthState } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const fromPath = location?.state?.from?.pathname || "/";
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -25,7 +28,7 @@ export default function Login() {
             if (response.status === 200) {
                 mostrarSucessoMensagem(response.data.message);
                 updateAuthState(response.data.access_token, response.data.user);
-                navigate('/');
+                navigate(fromPath, { replace: true });
             } else {
                 mostrarErroMensagem("Erro ao iniciar sessão.");
             }

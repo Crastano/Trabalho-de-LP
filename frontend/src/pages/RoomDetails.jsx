@@ -35,6 +35,59 @@ export default function RoomDetails() {
   const [mapLoading, setMapLoading] = useState(true)
   const [selectionMessage, setSelectionMessage] = useState("")
 
+  const toYmd = (d) => {
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, "0")
+    const dd = String(d.getDate()).padStart(2, "0")
+    return `${yyyy}-${mm}-${dd}`
+  }
+
+  const fromYmd = (ymd) => {
+    if (!ymd || typeof ymd !== "string") return null
+    const [y, m, d] = ymd.split("-").map((n) => Number(n))
+    if (!y || !m || !d) return null
+    const dt = new Date(y, m - 1, d)
+    if (Number.isNaN(dt.getTime())) return null
+    return dt
+  }
+
+  const addDaysYmd = (ymd, days) => {
+    const dt = fromYmd(ymd)
+    if (!dt) return ""
+    dt.setDate(dt.getDate() + days)
+    return toYmd(dt)
+  }
+
+  const diffDays = (startYmd, endYmd) => {
+    const a = fromYmd(startYmd)
+    const b = fromYmd(endYmd)
+    if (!a || !b) return null
+    const ms = b.getTime() - a.getTime()
+    if (!Number.isFinite(ms)) return null
+    return Math.round(ms / (1000 * 60 * 60 * 24))
+  }
+
+  const todayYmd = toYmd(new Date())
+
+  const mapRange = (() => {
+    const today = new Date()
+    const tomorrow = new Date(today)
+    tomorrow.setDate(today.getDate() + 1)
+    const start = bookingData.checkIn || toYmd(today)
+    const end = bookingData.checkOut || toYmd(tomorrow)
+    return { start, end }
+  })()
+
+  const mapDateLabel = (() => {
+    const d = fromYmd(mapRange.start)
+    if (!d) return ""
+    return new Intl.DateTimeFormat("pt-PT", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+    }).format(d)
+  })()
+
   const formatCurrency = (value = 0) =>
     new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(value || 0)
 
@@ -90,24 +143,30 @@ export default function RoomDetails() {
     fetchQuarto()
   }, [id])
 
+  // Reset seleção ao trocar de tipo de quarto
+  useEffect(() => {
+    setSelectedRoom(null)
+    setSelectionMessage("")
+  }, [quarto?.tipo])
+
   // Carrega mapa de disponibilidade por tipo (polling leve para manter "tempo real")
   useEffect(() => {
     let intervalId
 
-    // reset seleção ao trocar de tipo de quarto
-    setSelectedRoom(null)
-    setSelectionMessage("")
-
-    const buildGrid = (rooms = []) => {
+    const buildGrid = (rooms = [], tipoFallback = "") => {
       const cols = 6
       const rows = []
-      const list = rooms.map((r) => ({
-        id: r.id,
-        numero: r.numero || r.id,
-        nome: r.nome,
-        disponivel: (r.estado || "").toLowerCase() !== "ocupado",
-        tipo: r.tipo || tipoAtual || "",
-      }))
+      const list = rooms.map((r) => {
+        const estado = (r.estado || "").toLowerCase()
+        const disponivel = r?.disponivel ?? (estado ? estado !== "ocupado" : true)
+        return {
+          id: r.id,
+          numero: r.numero || r.id,
+          nome: r.nome,
+          disponivel,
+          tipo: r.tipo || tipoFallback || "",
+        }
+      })
       for (let i = 0; i < list.length; i += cols) {
         rows.push(list.slice(i, i + cols))
       }
@@ -117,13 +176,32 @@ export default function RoomDetails() {
     const fetchMap = async (tipoAtual) => {
       try {
         setMapLoading(true)
-        const resp = await api.get("/quartos")
+
+        const today = new Date()
+        const tomorrow = new Date(today)
+        tomorrow.setDate(today.getDate() + 1)
+
+        const dataInicio = bookingData.checkIn || toYmd(today)
+        const dataFim = bookingData.checkOut || toYmd(tomorrow)
+
+        const resp = await api.get("/quartos/disponibilidade", {
+          params: { tipo: tipoAtual || undefined, data_inicio: dataInicio, data_fim: dataFim },
+        })
+
         const data = Array.isArray(resp.data) ? resp.data : resp.data?.data || []
+
+        // O backend já filtra por tipo quando enviado em query; mantemos como fallback.
         const filtrados = tipoAtual ? data.filter((q) => (q.tipo || "").toLowerCase() === tipoAtual.toLowerCase()) : data
-        const matriz = filtrados.length ? buildGrid(filtrados) : buildGrid([
-          { id: 1, numero: 101, nome: "Quarto", disponivel: true, tipo: "Padrão" },
-          { id: 2, numero: 102, nome: "Quarto", disponivel: false, tipo: "Padrão" },
-        ])
+
+        const matriz = filtrados.length
+          ? buildGrid(filtrados, tipoAtual)
+          : buildGrid(
+              [
+                { id: 1, numero: 101, nome: "Quarto", disponivel: true, tipo: "Padrão" },
+                { id: 2, numero: 102, nome: "Quarto", disponivel: false, tipo: "Padrão" },
+              ],
+              tipoAtual,
+            )
         setMapRooms(matriz)
       } catch (err) {
         console.error("Erro ao carregar mapa de quartos:", err)
@@ -135,16 +213,59 @@ export default function RoomDetails() {
     // primeira carga
     fetchMap(quarto?.tipo)
 
-    // polling a cada 30s para refletir atualizações da área admin
+    // polling a cada 30s para refletir atualizações
     intervalId = setInterval(() => fetchMap(quarto?.tipo), 30000)
 
     return () => {
       if (intervalId) clearInterval(intervalId)
     }
-  }, [quarto?.tipo])
+  }, [quarto?.tipo, bookingData.checkIn, bookingData.checkOut])
+
+  const setMapStart = (newStartYmd) => {
+    const nights = diffDays(mapRange.start, mapRange.end) ?? 1
+    const safeNights = Math.max(1, nights)
+    const newEndYmd = addDaysYmd(newStartYmd, safeNights)
+
+    setBookingData((prev) => ({
+      ...prev,
+      checkIn: newStartYmd,
+      checkOut: newEndYmd,
+    }))
+  }
+
+  const shiftMap = (deltaDays) => {
+    const newStart = addDaysYmd(mapRange.start, deltaDays)
+    if (!newStart) return
+    setMapStart(newStart)
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
+
+    if (name === "checkIn") {
+      const nextCheckIn = value && value < todayYmd ? todayYmd : value
+      setBookingData((prev) => {
+        const currentCheckOut = prev.checkOut
+        const mustBumpCheckout = !currentCheckOut || diffDays(nextCheckIn, currentCheckOut) === null || diffDays(nextCheckIn, currentCheckOut) <= 0
+        return {
+          ...prev,
+          checkIn: nextCheckIn,
+          checkOut: mustBumpCheckout ? addDaysYmd(nextCheckIn, 1) : currentCheckOut,
+        }
+      })
+      return
+    }
+
+    if (name === "checkOut") {
+      setBookingData((prev) => {
+        const baseCheckIn = prev.checkIn || todayYmd
+        const minCheckOut = addDaysYmd(baseCheckIn, 1)
+        const nextCheckOut = value && value < minCheckOut ? minCheckOut : value
+        return { ...prev, checkOut: nextCheckOut }
+      })
+      return
+    }
+
     setBookingData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -159,6 +280,25 @@ export default function RoomDetails() {
     try {
       setSubmitting(true)
 
+      const checkIn = bookingData.checkIn
+      const checkOut = bookingData.checkOut
+
+      if (!checkIn || !checkOut) {
+        alert("Por favor selecione as datas de check-in e check-out.")
+        return
+      }
+
+      if (checkIn < todayYmd) {
+        alert("Não é possível reservar com uma data de check-in no passado.")
+        return
+      }
+
+      const nights = diffDays(checkIn, checkOut)
+      if (nights === null || nights <= 0) {
+        alert("A data de check-out tem de ser depois do check-in.")
+        return
+      }
+
       const quartoId = selectedRoom?.id ?? quarto.id
 
       // Atualiza telefone do utilizador (se necessário)
@@ -171,14 +311,21 @@ export default function RoomDetails() {
         }
       }
 
-      await api.post("/reservas", {
+      const resp = await api.post("/reservas", {
         quarto_id: quartoId,
-        data_entrada: bookingData.checkIn,
-        data_saida: bookingData.checkOut,
+        data_entrada: checkIn,
+        data_saida: checkOut,
         metodo_pagamento: bookingData.metodo_pagamento,
       })
       alert("Reserva criada com sucesso!")
-      navigate("/reservations")
+
+      const reservaCriada = resp?.data?.data
+      const pagamentoEstado = (reservaCriada?.pagamento?.estado || "").toLowerCase()
+      if (reservaCriada?.id && pagamentoEstado === "pendente") {
+        navigate(`/checkout/${reservaCriada.id}`)
+      } else {
+        navigate("/reservations")
+      }
     } catch (error) {
       console.error("Erro ao criar reserva:", error)
       const msg =
@@ -362,22 +509,98 @@ export default function RoomDetails() {
                     margin-bottom: 20px;
                 }
 
+                .map-card {
+                  background: #ffffff;
+                  border: 1px solid #e5e7eb;
+                  border-radius: 16px;
+                  padding: 16px;
+                  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+                }
+
+                .map-toolbar {
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 12px;
+                  margin: 0 0 14px;
+                  flex-wrap: wrap;
+                }
+
+                .map-date-nav {
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 8px;
+                  background: #f8fafc;
+                  border: 1px solid #e5e7eb;
+                  border-radius: 12px;
+                  padding: 8px 10px;
+                }
+
+                .map-date-label {
+                  font-size: 13px;
+                  color: #0f172a;
+                  font-weight: 700;
+                  min-width: 140px;
+                  text-align: center;
+                  text-transform: capitalize;
+                }
+
+                .map-date-btn {
+                  width: 34px;
+                  height: 34px;
+                  border-radius: 10px;
+                  border: 1px solid #e5e7eb;
+                  background: white;
+                  cursor: pointer;
+                  font-size: 18px;
+                  line-height: 1;
+                  color: #1e3a8a;
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  transition: transform 0.15s, background 0.15s;
+                }
+
+                .map-date-btn:hover {
+                  background: #eef2ff;
+                  transform: translateY(-1px);
+                }
+
+                .map-date-input {
+                  border: 1px solid #d1d5db;
+                  border-radius: 12px;
+                  padding: 9px 12px;
+                  font-size: 13px;
+                  color: #111827;
+                  background: white;
+                }
+
+                .map-date-input:focus {
+                  outline: none;
+                  border-color: #1e3a8a;
+                }
+
                 .availability-map {
-                    display: flex;
-                    gap: 24px;
-                    align-items: flex-start;
+                    display: grid;
+                    grid-template-columns: 1fr 260px;
+                    gap: 18px;
+                    align-items: start;
                 }
 
                 .map-grid {
                     display: grid;
-                  grid-template-columns: repeat(6, 48px);
-                    gap: 6px;
+                    grid-template-columns: repeat(6, 56px);
+                    gap: 10px;
+                    padding: 12px;
+                    border-radius: 14px;
+                    border: 1px solid #e5e7eb;
+                    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
                 }
 
                 .map-cell {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 6px;
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 12px;
                     cursor: pointer;
                     transition: all 0.2s;
                     border: 2px solid transparent;
@@ -387,6 +610,7 @@ export default function RoomDetails() {
                   font-size: 13px;
                   color: #0f172a;
                   font-weight: 600;
+                  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.10);
                 }
 
                 .map-cell.available {
@@ -408,20 +632,30 @@ export default function RoomDetails() {
                     box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.3);
                 }
 
+                .map-side {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                }
+
                 .map-legend {
                     display: flex;
                     flex-direction: column;
                     gap: 12px;
+                  padding: 12px;
+                  border-radius: 14px;
+                  border: 1px solid #e5e7eb;
+                  background: #ffffff;
                 }
 
                 .map-selection-info {
-                  margin-top: 8px;
                   font-size: 13px;
                   color: #0f172a;
-                  background: #e0e7ff;
+                  background: #eef2ff;
                   border: 1px solid #c7d2fe;
-                  padding: 10px 12px;
-                  border-radius: 8px;
+                  padding: 12px 12px;
+                  border-radius: 14px;
+                  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.06);
                 }
 
                 .legend-item {
@@ -530,6 +764,10 @@ export default function RoomDetails() {
                     .booking-card {
                         position: static;
                     }
+
+                    .availability-map {
+                      grid-template-columns: 1fr;
+                    }
                 }
 
                 @media (max-width: 768px) {
@@ -546,12 +784,12 @@ export default function RoomDetails() {
                     }
 
                     .map-grid {
-                      grid-template-columns: repeat(5, 44px);
+                      grid-template-columns: repeat(5, 48px);
                     }
 
                     .map-cell {
-                        width: 44px;
-                        height: 44px;
+                        width: 48px;
+                        height: 48px;
                     }
                 }
             `}</style>
@@ -690,9 +928,32 @@ export default function RoomDetails() {
           {/* MAPA INTERATIVO */}
           <div className="map-section">
             <h3 className="map-title">Mapa Interativo</h3>
-              <p className="map-subtitle">Disponibilidade em tempo real dos quartos {quarto.tipo || ""}.</p>
+            <p className="map-subtitle">
+              Disponibilidade para {mapDateLabel || mapRange.start}
+              {quarto.tipo ? ` (tipo: ${quarto.tipo})` : ""}.
+            </p>
 
-            <div className="availability-map">
+            <div className="map-card">
+              <div className="map-toolbar">
+                <div className="map-date-nav">
+                  <button type="button" className="map-date-btn" onClick={() => shiftMap(-1)} aria-label="Dia anterior">
+                    ‹
+                  </button>
+                  <div className="map-date-label">{mapDateLabel || mapRange.start}</div>
+                  <button type="button" className="map-date-btn" onClick={() => shiftMap(1)} aria-label="Dia seguinte">
+                    ›
+                  </button>
+                </div>
+                <input
+                  className="map-date-input"
+                  type="date"
+                  value={mapRange.start}
+                  onChange={(e) => setMapStart(e.target.value)}
+                  aria-label="Escolher data"
+                />
+              </div>
+
+              <div className="availability-map">
                 <div className="map-grid">
                   {mapRooms.map((row, rowIndex) =>
                     row.map((room, colIndex) => {
@@ -712,21 +973,24 @@ export default function RoomDetails() {
                   {mapLoading && <div style={{ gridColumn: "1 / -1", color: "#6b7280", fontSize: "13px" }}>A atualizar mapa...</div>}
                 </div>
 
-              <div className="map-legend">
-                <div className="legend-item">
-                  <div className="legend-color green"></div>
-                  <span>Disponível</span>
-                </div>
-                <div className="legend-item">
-                  <div className="legend-color red"></div>
-                  <span>Indisponível</span>
-                </div>
-                <div className="legend-item">
-                  <div className="legend-color blue"></div>
-                  <span>Selecionado</span>
+                <div className="map-side">
+                  <div className="map-legend">
+                    <div className="legend-item">
+                      <div className="legend-color green"></div>
+                      <span>Disponível</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color red"></div>
+                      <span>Indisponível</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color blue"></div>
+                      <span>Selecionado</span>
+                    </div>
+                  </div>
+                  <div className="map-selection-info">{selectionMessage || "Escolha um quarto disponível para selecionar."}</div>
                 </div>
               </div>
-              {selectionMessage ? <div className="map-selection-info">{selectionMessage}</div> : null}
             </div>
           </div>
         </div>
@@ -761,11 +1025,25 @@ export default function RoomDetails() {
             <div className="date-row">
               <div className="form-group">
                 <label>Check-in</label>
-                <input type="date" name="checkIn" value={bookingData.checkIn} onChange={handleInputChange} required />
+                <input
+                  type="date"
+                  name="checkIn"
+                  min={todayYmd}
+                  value={bookingData.checkIn}
+                  onChange={handleInputChange}
+                  required
+                />
               </div>
               <div className="form-group">
                 <label>Check-out</label>
-                <input type="date" name="checkOut" value={bookingData.checkOut} onChange={handleInputChange} required />
+                <input
+                  type="date"
+                  name="checkOut"
+                  min={addDaysYmd(bookingData.checkIn || todayYmd, 1)}
+                  value={bookingData.checkOut}
+                  onChange={handleInputChange}
+                  required
+                />
               </div>
             </div>
 

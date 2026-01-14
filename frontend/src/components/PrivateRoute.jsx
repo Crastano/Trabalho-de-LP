@@ -1,10 +1,11 @@
-import React, { use } from "react";
+import React from "react";
+import { useLocation, Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
-import { Navigate, Outlet } from "react-router";
 
 // Componente de rota privada que verifica se o usuário está autenticado
 export default function PrivateRoute({ children }) {
     const { user, loading } = useAuth();
+    const location = useLocation();
 
     if (loading) {
         return (
@@ -17,5 +18,5 @@ export default function PrivateRoute({ children }) {
         );
     }
 
-    return user ? children : <Navigate to="/" replace />;
+    return user ? children : <Navigate to="/login" replace state={{ from: location }} />;
 }

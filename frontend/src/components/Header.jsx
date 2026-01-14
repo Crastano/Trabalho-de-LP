@@ -13,7 +13,7 @@ export default function Header() {
     if (typeof logout === 'function') {
       await logout();
     }
-    setIsDropdownOpen(false);
+    setShowDropdown(false);
     navigate('/login');
   };
 

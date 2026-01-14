@@ -11,6 +11,7 @@ import Privacidade from "./pages/Privacidade.jsx"
 import Rooms from "./pages/Rooms.jsx"
 import RoomDetails from "./pages/RoomDetails.jsx"
 import Reservations from "./pages/Reservations.jsx"
+import Checkout from "./pages/Checkout.jsx"
 import Contact from "./pages/Contact.jsx"
 // Páginas de gestão de quartos (admin)
 import GestaoQuartos from "./pages/Quarto/GestaoQuartos.jsx"
@@ -26,20 +27,31 @@ import AdminPayments from "./pages/admin/AdminPayments.jsx"
 import AdminReports from "./pages/admin/AdminReports.jsx"
 import AdminProfile from "./pages/admin/AdminProfile.jsx"
 import { AuthProvider } from "./context/AuthContext.jsx"
+import { AccessibilityProvider } from "./context/AccessibilityContext.jsx"
 import PrivateRoute from "./components/PrivateRoute.jsx"
 import AdministradorOnly from "./components/AdministadorOnly.jsx"
 import Header from "./components/Header.jsx"
 import Footer from "./components/Footer.jsx"
+import AccessibilityWidget from "./components/AccessibilityWidget.jsx"
+import ScrollToTopButton from "./components/ScrollToTopButton.jsx"
 
 function App() {
   const location = useLocation()
   // Não mostrar header/footer em login e registar
   const hideHeaderFooter = ["/login", "/registar", "/forgot", "/reset-password"].includes(location.pathname) || location.pathname.startsWith("/admin")
+  const hideA11yWidget = location.pathname.startsWith("/admin")
 
   return (
     <>
-      <AuthProvider>
+      <AccessibilityProvider>
+        <AuthProvider>
+        <a className="skip-link" href="#main-content">
+          Saltar para conteúdo
+        </a>
+
         {!hideHeaderFooter && <Header />}
+
+        <main id="main-content" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/sobre" element={<Sobre />} />
@@ -51,7 +63,14 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/rooms" element={<Rooms />} />
-          <Route path="/rooms/:id" element={<RoomDetails />} />
+          <Route
+            path="/rooms/:id"
+            element={
+              <PrivateRoute>
+                <RoomDetails />
+              </PrivateRoute>
+            }
+          />
           <Route path="/contact" element={<Contact />} />
 
           <Route
@@ -59,6 +78,15 @@ function App() {
             element={
               <PrivateRoute>
                 <Reservations />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/checkout/:id"
+            element={
+              <PrivateRoute>
+                <Checkout />
               </PrivateRoute>
             }
           />
@@ -173,8 +201,13 @@ function App() {
             }
           />
         </Routes>
+        </main>
+
         {!hideHeaderFooter && <Footer />}
+        {!hideA11yWidget && <AccessibilityWidget />}
+        {!hideA11yWidget && <ScrollToTopButton />}
       </AuthProvider>
+      </AccessibilityProvider>
     </>
   )
 }

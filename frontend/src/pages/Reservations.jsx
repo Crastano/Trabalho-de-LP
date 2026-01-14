@@ -327,6 +327,23 @@ export default function Reservations() {
                     color: white;
                 }
 
+                .pay-btn {
+                  background: #f59e0b;
+                  border: 1px solid #f59e0b;
+                  color: #111;
+                  padding: 8px 16px;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 13px;
+                  font-weight: 700;
+                  transition: all 0.3s;
+                }
+
+                .pay-btn:hover {
+                  background: #d97706;
+                  border-color: #d97706;
+                }
+
                 /* ESTADO VAZIO */
                 .empty-state {
                     text-align: center;
@@ -434,6 +451,11 @@ export default function Reservations() {
                   </div>
                   <div className="reservation-actions">
                     <div className="reservation-price">{formatPrice(getTotalPrice(reserva))}</div>
+                    {reserva?.pagamento?.estado?.toLowerCase() === "pendente" && reserva.estado?.toLowerCase() !== "cancelado" && (
+                      <button className="pay-btn" onClick={() => navigate(`/checkout/${reserva.id}`)}>
+                        Pagar agora
+                      </button>
+                    )}
                     {reserva.estado?.toLowerCase() !== "cancelado" && (
                       <button className="cancel-btn" onClick={() => handleCancelReservation(reserva.id)}>
                         Cancelar Reserva

@@ -443,7 +443,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="rounded-xl bg-gray-50 px-2 py-3 sm:p-3">
-                  <div className="text-lg font-extrabold text-gray-900 sm:text-xl">+100</div>
+                  <div className="text-lg font-extrabold text-gray-900 sm:text-xl">+30</div>
                   <div className="mt-1 text-xs font-medium uppercase tracking-wide text-gray-500">
                     Quartos Disponíveis
                   </div>

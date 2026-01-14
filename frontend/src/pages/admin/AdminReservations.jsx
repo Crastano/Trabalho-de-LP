@@ -7,6 +7,13 @@ export default function AdminReservations() {
   const [reservas, setReservas] = useState([])
   const [loading, setLoading] = useState(true)
 
+  const [viewReserva, setViewReserva] = useState(null)
+  const [viewLoading, setViewLoading] = useState(false)
+
+  const [editingId, setEditingId] = useState(null)
+  const [savingId, setSavingId] = useState(null)
+  const [editById, setEditById] = useState({})
+
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
   const [clientes, setClientes] = useState([])
@@ -38,6 +45,88 @@ export default function AdminReservations() {
   useEffect(() => {
     fetchReservas()
   }, [])
+
+  const toDatetimeLocal = (value) => {
+    if (!value) return ""
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return ""
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, "0")
+    const dd = String(d.getDate()).padStart(2, "0")
+    const hh = String(d.getHours()).padStart(2, "0")
+    const mi = String(d.getMinutes()).padStart(2, "0")
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`
+  }
+
+  const openView = async (id) => {
+    try {
+      setViewLoading(true)
+      const resp = await api.get(`/reservas/${id}`)
+      const data = resp?.data?.data ?? resp?.data
+      setViewReserva(data)
+    } catch (err) {
+      console.error("Erro ao carregar reserva", err)
+      mostrarErroMensagem("Erro ao carregar reserva.")
+      setViewReserva(null)
+    } finally {
+      setViewLoading(false)
+    }
+  }
+
+  const startEdit = (res) => {
+    setEditingId(res.id)
+    setEditById((prev) => ({
+      ...prev,
+      [res.id]: {
+        estado: (res?.estado || "").toString().toLowerCase() || "confirmado",
+        data_inicio: toDatetimeLocal(res?.data_inicio),
+        data_fim: toDatetimeLocal(res?.data_fim),
+      },
+    }))
+  }
+
+  const setEditField = (id, field, value) => {
+    setEditById((prev) => ({
+      ...prev,
+      [id]: { ...(prev[id] || {}), [field]: value },
+    }))
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const saveEdit = async (id) => {
+    const form = editById[id]
+    if (!form) return
+
+    if (!form.data_inicio || !form.data_fim) {
+      mostrarErroMensagem("Indique check-in e check-out.")
+      return
+    }
+
+    setSavingId(id)
+    try {
+      const payload = {
+        estado: form.estado,
+        data_inicio: form.data_inicio,
+        data_fim: form.data_fim,
+      }
+      const resp = await api.put(`/reservas/${id}`, payload)
+      mostrarSucessoMensagem(resp?.data?.message || "Reserva atualizada com sucesso!")
+      setEditingId(null)
+      await fetchReservas()
+      if (viewReserva?.id === id) {
+        await openView(id)
+      }
+    } catch (err) {
+      console.error("Erro ao atualizar reserva", err)
+      const message = err?.response?.data?.message || "Erro ao atualizar reserva."
+      mostrarErroMensagem(message)
+    } finally {
+      setSavingId(null)
+    }
+  }
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -271,6 +360,58 @@ export default function AdminReservations() {
         </div>
       ) : null}
 
+      {viewLoading ? (
+        <div className="admin-card">
+          <p style={{ padding: "12px", color: "#6b7280" }}>A carregar detalhe da reserva...</p>
+        </div>
+      ) : viewReserva ? (
+        <div className="admin-card">
+          <div className="admin-section-header" style={{ alignItems: "flex-start" }}>
+            <div>
+              <h3>Reserva #{viewReserva.id}</h3>
+              <p style={{ margin: 0, color: "#6b7280" }}>Detalhe rápido (admin)</p>
+            </div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button type="button" className="admin-btn" onClick={() => setViewReserva(null)}>
+                Fechar
+              </button>
+              <button
+                type="button"
+                className="admin-btn primary"
+                onClick={() => startEdit(viewReserva)}
+                disabled={savingId === viewReserva.id}
+                style={{ opacity: savingId === viewReserva.id ? 0.7 : 1 }}
+              >
+                Editar
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+            <div>
+              <div style={{ fontSize: "12px", color: "#6b7280" }}>Cliente</div>
+              <div style={{ fontWeight: 600 }}>{viewReserva?.utilizador?.name ?? viewReserva?.cliente ?? "-"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "12px", color: "#6b7280" }}>Quarto</div>
+              <div style={{ fontWeight: 600 }}>{viewReserva?.quarto?.numero ?? viewReserva?.quarto_id ?? "-"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "12px", color: "#6b7280" }}>Check-in</div>
+              <div style={{ fontWeight: 600 }}>{formatDate(viewReserva?.data_inicio)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "12px", color: "#6b7280" }}>Check-out</div>
+              <div style={{ fontWeight: 600 }}>{formatDate(viewReserva?.data_fim)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "12px", color: "#6b7280" }}>Estado</div>
+              <div style={{ fontWeight: 600 }}>{formatEstado(viewReserva?.estado)}</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="admin-card">
         <div className="admin-section-header">
           <h3>Reservas</h3>
@@ -314,17 +455,93 @@ export default function AdminReservations() {
                 reservas.map((res) => {
                   const quarto = res?.quarto_id ? quartosById.get(res.quarto_id) : res?.quarto
                   const quartoNumero = quarto?.numero ?? quarto?.id ?? res?.quarto_id ?? "-"
+                  const isEditing = editingId === res.id
+                  const edit = editById[res.id]
                   return (
                     <tr key={res.id}>
                       <td>{res.id}</td>
                       <td>{res?.utilizador?.name ?? res?.cliente ?? "-"}</td>
                       <td>{quartoNumero}</td>
-                      <td>{formatDate(res?.data_inicio)}</td>
-                      <td>{formatDate(res?.data_fim)}</td>
                       <td>
-                        <span className={`badge ${badgeTone(res?.estado)}`}>{formatEstado(res?.estado)}</span>
+                        {isEditing ? (
+                          <input
+                            className="admin-input"
+                            type="datetime-local"
+                            value={edit?.data_inicio ?? toDatetimeLocal(res?.data_inicio)}
+                            onChange={(e) => setEditField(res.id, "data_inicio", e.target.value)}
+                            disabled={savingId === res.id}
+                            style={{ maxWidth: "200px" }}
+                          />
+                        ) : (
+                          formatDate(res?.data_inicio)
+                        )}
                       </td>
-                      <td style={{ textAlign: "right", color: "#1d4ed8", fontWeight: 600 }}>Ver · Editar</td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            className="admin-input"
+                            type="datetime-local"
+                            value={edit?.data_fim ?? toDatetimeLocal(res?.data_fim)}
+                            onChange={(e) => setEditField(res.id, "data_fim", e.target.value)}
+                            disabled={savingId === res.id}
+                            style={{ maxWidth: "200px" }}
+                          />
+                        ) : (
+                          formatDate(res?.data_fim)
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <select
+                            className="admin-select"
+                            value={edit?.estado ?? (res?.estado || "confirmado")}
+                            onChange={(e) => setEditField(res.id, "estado", e.target.value)}
+                            disabled={savingId === res.id}
+                            style={{ minWidth: "150px" }}
+                          >
+                            <option value="confirmado">Confirmado</option>
+                            <option value="pendente">Pendente</option>
+                            <option value="checkedin">Checked-in</option>
+                            <option value="checkedout">Checked-out</option>
+                            <option value="cancelado">Cancelado</option>
+                          </select>
+                        ) : (
+                          <span className={`badge ${badgeTone(res?.estado)}`}>{formatEstado(res?.estado)}</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {isEditing ? (
+                          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                            <button
+                              type="button"
+                              className="admin-btn"
+                              onClick={cancelEdit}
+                              disabled={savingId === res.id}
+                              style={{ opacity: savingId === res.id ? 0.7 : 1 }}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-btn primary"
+                              onClick={() => saveEdit(res.id)}
+                              disabled={savingId === res.id}
+                              style={{ opacity: savingId === res.id ? 0.7 : 1 }}
+                            >
+                              Guardar
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                            <button type="button" className="admin-btn" onClick={() => openView(res.id)}>
+                              Ver
+                            </button>
+                            <button type="button" className="admin-btn" onClick={() => startEdit(res)}>
+                              Editar
+                            </button>
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   )
                 })
